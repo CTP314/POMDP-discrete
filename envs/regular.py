@@ -72,6 +72,88 @@ class Parity(RegularBase):
         target_str = str(target)
         return (input_str, target_str)
 
+class Even_Pairs(RegularBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.Q = [
+            '00', '01', '10', '11', '0E', '1E',
+        ]
+        self.sigma = [
+            '0', '1', 'E'
+        ]
+        self.classes = ['0', '1']
+        self.delta, self.delta_inv = self.calc_delta_with_table([
+            ('00', '0', '00'),
+            ('00', '1', '01'),
+            ('01', '0', '00'),
+            ('01', '1', '01'),
+            ('10', '0', '10'),
+            ('10', '1', '11'),
+            ('11', '0', '10'),
+            ('11', '1', '11'),
+            ('00', 'E', '0E'),
+            ('01', 'E', '1E'),
+            ('10', 'E', '1E'),
+            ('11', 'E', '0E'),     
+        ])
+        self.q0 = None
+        self.reset()
+        
+    def sample(self, length):
+        assert length > 1
+        input = np.random.choice([0, 1], length - 1)
+        target = 0 if input[0] == input[-1] else 1
+        input_str = ''.join(map(str, input)) + 'E'
+        target_str = str(target)
+        self.q0 = input_str[0] * 2
+        return (input_str, target_str)
+
+class Cycle_Navigation(RegularBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.Q = [
+            '0', '1', '2', '3', '4', '0E', '1E', '2E', '3E', '4E',
+        ]
+        self.sigma = [
+            '0', '1', '2', 'E'
+        ]
+        self.classes = ['0', '1', '2', '3', '4']
+        self.delta, self.delta_inv = self.calc_delta_with_table([
+            ('0', '1', '1'),
+            ('1', '1', '2'),
+            ('2', '1', '3'),
+            ('3', '1', '4'),
+            ('4', '1', '0'),
+            ('0', '2', '4'),
+            ('1', '2', '0'),
+            ('2', '2', '1'),
+            ('3', '2', '2'),
+            ('4', '2', '3'),
+            ('0', '0', '0'),
+            ('1', '0', '1'),
+            ('2', '0', '2'),
+            ('3', '0', '3'),
+            ('4', '0', '4'),
+            ('0', 'E', '0E'),
+            ('1', 'E', '1E'),
+            ('2', 'E', '2E'),
+            ('3', 'E', '3E'),
+            ('4', 'E', '4E'),     
+        ])
+        self.q0 = '0'
+        self.reset()
+        
+    def sample(self, length):
+        assert length > 1
+        input = np.random.choice([0, 1, 2], length - 1)
+        target = 0
+        for x in input:
+            if x == 1: target = (target + 1)%5
+            elif x == 2: target = (target - 1)%5
+        input_str = ''.join(map(str, input)) + 'E'
+        target_str = str(target)
+        return (input_str, target_str)
+
 class RegularPOMDP(gym.Env):
     def __init__(
         self, 
