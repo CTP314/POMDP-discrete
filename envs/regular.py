@@ -73,6 +73,7 @@ class Parity(RegularBase):
         return (input_str, target_str)
 
 class Even_Pairs(RegularBase):
+# 第一位和最后一位相同
     def __init__(self) -> None:
         super().__init__()
         self.Q = [
@@ -91,10 +92,10 @@ class Even_Pairs(RegularBase):
             ('10', '1', '11'),
             ('11', '0', '10'),
             ('11', '1', '11'),
-            ('00', 'E', '0E'),
-            ('01', 'E', '1E'),
-            ('10', 'E', '1E'),
-            ('11', 'E', '0E'),     
+            ('00', 'E', '1E'),
+            ('01', 'E', '0E'),
+            ('10', 'E', '0E'),
+            ('11', 'E', '1E'),     
         ])
         self.q0 = None
         self.reset()
@@ -102,13 +103,14 @@ class Even_Pairs(RegularBase):
     def sample(self, length):
         assert length > 1
         input = np.random.choice([0, 1], length - 1)
-        target = 0 if input[0] == input[-1] else 1
+        target = 1 if input[0] == input[-1] else 0
         input_str = ''.join(map(str, input)) + 'E'
         target_str = str(target)
         self.q0 = input_str[0] * 2
         return (input_str, target_str)
 
 class Cycle_Navigation(RegularBase):
+# 在长为5的环上的位置
     def __init__(self) -> None:
         super().__init__()
         self.Q = [
@@ -150,6 +152,121 @@ class Cycle_Navigation(RegularBase):
         for x in input:
             if x == 1: target = (target + 1)%5
             elif x == 2: target = (target - 1)%5
+        input_str = ''.join(map(str, input)) + 'E'
+        target_str = str(target)
+        return (input_str, target_str)
+
+class D2(RegularBase):
+# a(ab)*b
+    def __init__(self) -> None:
+        super().__init__()
+        self.Q = [
+            'S', '0', '1', '2', 'F', '0E', '1E'
+        ]
+        self.sigma = [
+            '0', '1', 'E'
+        ]
+        self.classes = ['0', '1']
+        self.delta, self.delta_inv = self.calc_delta_with_table([
+            ('S', '0', '1'),
+            ('S', '1', 'F'),
+            ('S', 'E', '0E'),
+            ('0', '0', 'F'),
+            ('0', '1', '1'),
+            ('0', 'E', '0E'),
+            ('1', '0', '0'),
+            ('1', '1', '2'),
+            ('1', 'E', 'F'),
+            ('2', '0', 'F'),
+            ('2', '1', 'F'),
+            ('2', 'E', '1E'),
+            ('F', '0', 'F'),
+            ('F', '1', 'F'),
+            ('F', 'E', '0E')  
+        ])
+        self.q0 = 'S'
+        self.reset()
+        
+    def sample(self, length):
+        assert length > 1
+        input = np.random.choice([0, 1], length - 1)
+        target = 0
+        if input[0] == '0' and input[-1] == '1' and (length - 1)%2 == 0:
+            flg = True
+            for idx in range(0, (length - 3)//2):
+                if input[1 + 2*idx] != '0' or input[2 + 2*idx] != '1': 
+                    flg = False
+            if flg:
+                target = 1
+        input_str = ''.join(map(str, input)) + 'E'
+        target_str = str(target)
+        return (input_str, target_str)
+
+class Tomita_5(RegularBase):
+# 0和1的个数都为偶数
+    def __init__(self) -> None:
+        super().__init__()
+        self.Q = [
+             '0', '1', '2', '3', '0E', '1E'
+        ]
+        self.sigma = [
+            '0', '1', 'E'
+        ]
+        self.classes = ['0', '1']
+        self.delta, self.delta_inv = self.calc_delta_with_table([
+            ('0', '0', '2'),
+            ('0', '1', '1'),
+            ('0', 'E', '1E'),
+            ('1', '0', '3'),
+            ('1', '1', '0'),
+            ('1', 'E', '0E'),
+            ('2', '0', '0'), 
+            ('2', '1', '3'),
+            ('2', 'E', '0E'),
+            ('3', '0', '1'),
+            ('3', '1', '2'),
+            ('3', 'E', '0E'),
+        ])
+        self.q0 = '0'
+        self.reset()
+        
+    def sample(self, length):
+        assert length > 1
+        input = np.random.choice([0, 1], length - 1)
+        target = 1 if (input.sum() % 2 == 0 and (length - 1) % 2 == 0) else 0
+        input_str = ''.join(map(str, input)) + 'E'
+        target_str = str(target)
+        return (input_str, target_str)
+      
+class Tomita_6(RegularBase):
+# 0和1的个数的差为3的倍数
+    def __init__(self) -> None:
+        super().__init__()
+        self.Q = [
+             '0', '1', '2', '0E', '1E'
+        ]
+        self.sigma = [
+            '0', '1', 'E'
+        ]
+        self.classes = ['0', '1']
+        self.delta, self.delta_inv = self.calc_delta_with_table([
+            ('0', '0', '2'),
+            ('0', '1', '1'),
+            ('0', 'E', '1E'),
+            ('1', '0', '0'),
+            ('1', '1', '2'),
+            ('1', 'E', '0E'),
+            ('2', '0', '1'), 
+            ('2', '1', '0'),
+            ('2', 'E', '0E'),
+        ])
+        self.q0 = '0'
+        self.reset()
+        
+    def sample(self, length):
+        assert length > 1
+        input = np.random.choice([0, 1], length - 1)
+        target = 1 if (length - 1 - 2 * input.sum()) % 3 == 0 else 0
         input_str = ''.join(map(str, input)) + 'E'
         target_str = str(target)
         return (input_str, target_str)
