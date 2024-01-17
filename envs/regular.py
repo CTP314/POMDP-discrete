@@ -28,7 +28,6 @@ class RegularBase:
         return self.q
     
     def step(self, a):
-        assert a in self.sigma
         done, success = False, False
         if self.is_end():
             done, success = True, a == self.q[:-1]
@@ -371,8 +370,32 @@ class ParityPOMDP(RegularPOMDP):
             eval_length=eval_length,
         )
         
+class Even_PairsPOMDP(RegularPOMDP):
+    def __init__(
+        self,
+        length,
+        eval_length=None,
+    ):
+        super().__init__(
+            Even_Pairs(),
+            length,
+            eval_length=eval_length,
+        )
+        
+class Cycle_NavigationPOMDP(RegularPOMDP):
+    def __init__(
+        self,
+        length,
+        eval_length=None,
+    ):
+        super().__init__(
+            Cycle_Navigation(),
+            length,
+            eval_length=eval_length,
+        )
+        
 if __name__ == '__main__':
-    env = ParityPOMDP(10)
+    env = Cycle_NavigationPOMDP(10)
     obs = env.reset()
     print(env.input, env.target)
     print(env.time_step, "null", obs)
