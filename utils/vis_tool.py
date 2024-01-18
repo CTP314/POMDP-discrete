@@ -76,15 +76,15 @@ def walk_through(
                 print("deleted")
             return None
 
-        if isnan(df["env_steps"].iloc[-1]) or df["env_steps"].iloc[-1] < cutoff * end:
-            # an incomplete run
-            print("!!incomplete csv", run, "num steps", df["env_steps"].iloc[-1])
-            if delete:
-                shutil.rmtree(run)
-                print("deleted")
-            else:
-                print("\n")
-            return None
+        # if isnan(df["env_steps"].iloc[-1]) or df["env_steps"].iloc[-1] < cutoff * end:
+        #     # an incomplete run
+        #     print("!!incomplete csv", run, "num steps", df["env_steps"].iloc[-1])
+        #     if delete:
+        #         shutil.rmtree(run)
+        #         print("deleted")
+        #     else:
+        #         print("\n")
+        #     return None
 
         # smooth by moving average
         df[metric] = df[metric].rolling(window=window, min_periods=1).mean()
@@ -109,8 +109,10 @@ def walk_through(
 
     dfs = []
     i = 0
-
-    runs = sorted(glob.glob(os.path.join(path, "*")))
+    runs = []
+    for p in glob.glob(os.path.join(path, "*")):
+        runs += glob.glob(os.path.join(p, "*"))
+    runs = sorted(runs)
 
     for run in runs:
         flags = pickle.load(open(os.path.join(run, "flags.pkl"), "rb"))

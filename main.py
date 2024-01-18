@@ -75,7 +75,7 @@ def main(argv):
 
     config_env, env_name = config_env.create_fn(config_env)
     env = make_env(env_name, seed)
-    eval_env = make_env(env_name, seed + 42)
+    eval_env = make_env(env_name, seed + 42, eval=True)
 
     system.reproduce(seed)
     torch.set_num_threads(1)

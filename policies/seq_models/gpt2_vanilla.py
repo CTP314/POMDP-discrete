@@ -84,10 +84,10 @@ class GPT2(nn.Module):
             timesteps = ptu.arange(0, length)
             pkv = None
             output, full_out = self._forward(input_embeds, timesteps, pkv)
-            h = full_out["past_key_values"], None, None
+            h = full_out["past_key_values"], None, None, None
 
         else:  # inference/testing: one time step at a time
-            pkv, timesteps, past_embeds = h_0
+            pkv, timesteps, past_embeds, _ = h_0
             history_length = past_embeds.shape[0]
             if history_length > self.max_history_length:  # confirmed this is correct
                 pkv = None
@@ -107,7 +107,7 @@ class GPT2(nn.Module):
                 if input_embeds.shape[0] > 1
                 else torch.cat((past_embeds, input_embeds), dim=0)
             )
-            h = full_out["past_key_values"], timesteps + 1, past_embeds
+            h = full_out["past_key_values"], timesteps + 1, past_embeds, output
             # print(history_length, self.max_history_length, past_embeds.shape)
 
         return output, h
@@ -137,6 +137,6 @@ class GPT2(nn.Module):
         if batch_size is None:  # inference, batch_size=1
             pkv = None
             initial_timestep = ptu.arange(0, 1)
-            return (pkv, initial_timestep, ptu.zeros((0, 1, self.hidden_size)).float())
+            return (pkv, initial_timestep, ptu.zeros((0, 1, self.hidden_size)).float(), None)
         else:  # training, not used
             return None
