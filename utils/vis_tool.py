@@ -62,6 +62,7 @@ def walk_through(
     window: int,
     cutoff: float = 0.9,
     delete: bool = False,
+    is_regular = False,
 ):
     def isnan(number):
         return np.isnan(float(number))
@@ -110,9 +111,12 @@ def walk_through(
     dfs = []
     i = 0
     runs = []
-    for p in glob.glob(os.path.join(path, "*")):
-        runs += glob.glob(os.path.join(p, "*"))
-    runs = sorted(runs)
+    if is_regular:
+        for p in glob.glob(os.path.join(path, "*")):
+            runs += glob.glob(os.path.join(p, "*"))
+        runs = sorted(runs)
+    else:
+        runs = sorted(glob.glob(os.path.join(path, "*")))
 
     for run in runs:
         flags = pickle.load(open(os.path.join(run, "flags.pkl"), "rb"))
@@ -136,6 +140,7 @@ def walk_through(
         i += 1
 
         # concat flags (dot)
+        flags['run_name'] = run
         pd_flags = pd.json_normalize(_flatten_dict(flags))
         df_flag = pd.concat([pd_flags] * df.shape[0], axis=0)  # repeat rows
         df_flag.index = df.index  # copy index
