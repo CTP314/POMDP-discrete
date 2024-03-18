@@ -85,6 +85,9 @@ class TMazeBase(gym.Env):
         self.observation_space = gym.spaces.Box(
             low=-1.0, high=1.0, shape=(obs_dim,), dtype=np.float32
         )
+        
+    def eval(self, *args, **kwargs):
+        pass
 
     def position_encoding(self, x: int, y: int, goal_y: int):
         if x == 0:

@@ -14,6 +14,7 @@ class RegularBase:
         self.q0 = None
         self.q = None
         self.classes = []
+        self.l_min = 2
         
     def calc_delta_with_table(self, table):
         delta = defaultdict(dict)
@@ -71,7 +72,74 @@ class Parity(RegularBase):
         target_str = str(target)
         return (input_str, target_str)
 
-class Even_Pairs(RegularBase):
+class FirstZero(RegularBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.Q = [
+            's', '0', '1', '0E', '1E',
+        ]
+        self.sigma = [
+            '0', '1', 'E'
+        ]
+        self.classes = ['0', '1']
+        self.l_min = 3
+        self.delta, self.delta_inv = self.calc_delta_with_table([
+            ('s', '0', '0'),
+            ('s', '1', '1'),
+            ('0', '0', '0'),
+            ('0', '1', '0'),
+            ('1', '0', '1'),
+            ('1', '1', '1'),
+            ('0', 'E', '0E'),
+            ('1', 'E', '1E'),
+        ])
+        self.q0 = 's'
+        self.reset()
+        
+    def sample(self, length):
+        assert length > 2
+        input = np.random.choice([0, 1], length - 1)
+        target = 1 if input[0] == 0 else 0
+        input_str = ''.join(map(str, input)) + 'E'
+        target_str = str(target)
+        return (input_str, target_str)    
+    
+class S5(RegularBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.Q = ['0', '1', '2', '3', '4'] + ['0E', '1E', '2E', '3E', '4E']
+        self.sigma = ['0', '1', 'E']
+        self.classes = ['0', '1', '2', '3', '4']
+        table = []
+        for q in ['0', '1', '2', '3', '4']:
+            table.append((q, 'E', q + 'E'))
+        for q in [0, 1, 2, 3, 4]:
+            table.append((str(q), '0', str((q + 1) % 5)))
+        for q in [0, 1, 2, 3]:
+            table.append((str(q), '1', str((q + 1) % 4)))
+        table.append(('4', '1', '4'))
+        self.delta, self.delta_inv = self.calc_delta_with_table(table)
+        self.q0 = '0'
+        self.stats = [0] * 5
+        self.reset()
+        
+    def sample(self, length):
+        assert length > 1
+        l = 1
+        input_str = ''
+        q = self.q0
+        while l < length:
+            a = np.random.choice(['0', '1'])
+            q = self.delta[q][a]
+            input_str += a
+            l += 1
+            # self.stats[int(q)] += 1
+        input_str += 'E'
+        target_str = q
+        # self.stats[int(q)] += 1
+        return (input_str, target_str)    
+
+class EvenPairs(RegularBase):
 # 第一位和最后一位相同
     def __init__(self) -> None:
         super().__init__()
@@ -321,7 +389,7 @@ class RegularPOMDP(gym.Env):
         
     def get_obs(self):
         obs = np.zeros(self.observation_space.shape)
-        a = self.regular_lang.delta_inv[self.prev_q][self.q]
+        a = self.input[self.time_step] if self.time_step < self.current_length else 'E'
         obs[self.regular_lang.sigma.index(a)] = 1.0
         if self.add_timestep:
             obs[-1] = self.time_step / self.current_length
@@ -331,7 +399,7 @@ class RegularPOMDP(gym.Env):
         if self.is_eval:
             self.current_length = self.eval_length
         else:
-            self.current_length = np.random.randint(2, self.length + 1)
+            self.current_length = np.random.randint(self.regular_lang.l_min, self.length + 1)
         self.time_step = 0
         self.input, self.target = self.regular_lang.sample(self.current_length)
         self.prev_q = self.regular_lang.reset()
@@ -369,15 +437,27 @@ class ParityPOMDP(RegularPOMDP):
             length,
             eval_length=eval_length,
         )
-        
-class Even_PairsPOMDP(RegularPOMDP):
+
+class FirstZeroPOMDP(RegularPOMDP):
     def __init__(
         self,
         length,
         eval_length=None,
     ):
         super().__init__(
-            Even_Pairs(),
+            FirstZero(),
+            length,
+            eval_length=eval_length,
+        )  
+        
+class EvenPairsPOMDP(RegularPOMDP):
+    def __init__(
+        self,
+        length,
+        eval_length=None,
+    ):
+        super().__init__(
+            EvenPairs(),
             length,
             eval_length=eval_length,
         )
@@ -394,8 +474,25 @@ class Cycle_NavigationPOMDP(RegularPOMDP):
             eval_length=eval_length,
         )
         
+class S5POMDP(RegularPOMDP):
+    def __init__(
+        self,
+        length,
+        eval_length=None,
+    ):
+        super().__init__(
+            S5(),
+            length,
+            eval_length=eval_length,
+        )
+        
 if __name__ == '__main__':
-    env = Cycle_NavigationPOMDP(10)
+    from tqdm import trange
+    env = S5POMDP(10)
+    # for i in trange(100000):
+        # obs = env.reset()
+    # print(env.regular_lang.stats)
+    env.eval()
     obs = env.reset()
     print(env.input, env.target)
     print(env.time_step, "null", obs)
@@ -407,3 +504,4 @@ if __name__ == '__main__':
         act = env.action_space.sample()
         obs, rew, done, _ = env.step(act)
         print(env.time_step, env.action_mapping[act], obs, rew, done)
+    print(env.regular_lang.delta)

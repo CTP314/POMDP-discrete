@@ -19,3 +19,5 @@ debug_old/
 plts/
 official
 results
+
+*.ipynb
